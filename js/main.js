@@ -1,8 +1,51 @@
 // ============================================================
-//  main.js — Shared utilities for all pages
+//  main.js — Shared JS: navbar, toast, API, PWA, fade-in
 // ============================================================
 
-// ── Navbar scroll effect ────────────────────────────────────
+// ── Service Worker Registration (PWA) ────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('[PWA] Service worker registered:', reg.scope))
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
+  });
+}
+
+// ── PWA Install Prompt ───────────────────────────────────────
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+
+  // Show install banner after 3 seconds
+  setTimeout(() => {
+    const banner = document.getElementById('install-banner');
+    if (banner && !sessionStorage.getItem('pwa-banner-dismissed')) {
+      banner.classList.add('show');
+    }
+  }, 3000);
+});
+
+function installPWA() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') {
+      showToast('App install ho gaya! 🎉', 'success');
+      dismissInstallBanner();
+    }
+    deferredInstallPrompt = null;
+  });
+}
+
+function dismissInstallBanner() {
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.classList.remove('show');
+  sessionStorage.setItem('pwa-banner-dismissed', '1');
+}
+
+// ── Navbar scroll ────────────────────────────────────────────
 const navbar = document.querySelector('.navbar');
 if (navbar) {
   window.addEventListener('scroll', () => {
@@ -10,15 +53,17 @@ if (navbar) {
   });
 }
 
-// ── Active nav link highlight ───────────────────────────────
+// ── Active nav link ──────────────────────────────────────────
 document.querySelectorAll('.nav-links a').forEach(link => {
-  if (link.href === window.location.href) link.classList.add('active');
+  if (link.href === window.location.href ||
+      window.location.pathname.endsWith(link.getAttribute('href'))) {
+    link.classList.add('active');
+  }
 });
 
-// ── Mobile hamburger menu ───────────────────────────────────
+// ── Hamburger menu ───────────────────────────────────────────
 const hamburger = document.querySelector('.nav-hamburger');
 const navLinks  = document.querySelector('.nav-links');
-
 if (hamburger && navLinks) {
   hamburger.addEventListener('click', () => {
     navLinks.classList.toggle('open');
@@ -31,19 +76,15 @@ if (hamburger && navLinks) {
       spans.forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
     }
   });
-
-  // Close on link click
   navLinks.querySelectorAll('a').forEach(a => {
     a.addEventListener('click', () => {
       navLinks.classList.remove('open');
-      hamburger.querySelectorAll('span').forEach(s => {
-        s.style.transform = ''; s.style.opacity = '';
-      });
+      hamburger.querySelectorAll('span').forEach(s => { s.style.transform=''; s.style.opacity=''; });
     });
   });
 }
 
-// ── Toast Notification System ───────────────────────────────
+// ── Toast system ─────────────────────────────────────────────
 function showToast(message, type = 'info', duration = 3500) {
   let container = document.querySelector('.toast-container');
   if (!container) {
@@ -51,31 +92,26 @@ function showToast(message, type = 'info', duration = 3500) {
     container.className = 'toast-container';
     document.body.appendChild(container);
   }
-
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
-
+  const icons = { success:'✓', error:'✕', info:'ℹ', warn:'⚠' };
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `<span>${icons[type] || icons.info}</span><span>${message}</span>`;
-
   container.appendChild(toast);
-
   setTimeout(() => {
     toast.style.animation = 'toastIn 0.3s ease reverse forwards';
     setTimeout(() => toast.remove(), 300);
   }, duration);
 }
 
-// ── API Helper ──────────────────────────────────────────────
+// ── API helpers ──────────────────────────────────────────────
 async function apiGet(action, params = {}) {
   if (!CAFE_CONFIG.SCRIPT_URL || CAFE_CONFIG.SCRIPT_URL.includes('YOUR_')) {
-    console.warn('⚠️ Script URL not configured in js/config.js');
+    console.warn('⚠️ Script URL not set in config.js');
     return null;
   }
   const url = new URL(CAFE_CONFIG.SCRIPT_URL);
   url.searchParams.set('action', action);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-
   try {
     const res = await fetch(url.toString());
     return await res.json();
@@ -87,14 +123,11 @@ async function apiGet(action, params = {}) {
 
 async function apiPost(body) {
   if (!CAFE_CONFIG.SCRIPT_URL || CAFE_CONFIG.SCRIPT_URL.includes('YOUR_')) {
-    console.warn('⚠️ Script URL not configured in js/config.js');
+    console.warn('⚠️ Script URL not set in config.js');
     return null;
   }
   try {
-    const res = await fetch(CAFE_CONFIG.SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
+    const res = await fetch(CAFE_CONFIG.SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
     return await res.json();
   } catch (err) {
     console.error('API POST error:', err);
@@ -102,32 +135,22 @@ async function apiPost(body) {
   }
 }
 
-// ── Utility functions ───────────────────────────────────────
-function formatPrice(amount) {
-  return `${CAFE_CONFIG.CURRENCY}${Number(amount).toFixed(0)}`;
-}
+// ── Utilities ────────────────────────────────────────────────
+function formatPrice(n) { return `${CAFE_CONFIG.CURRENCY}${Number(n).toFixed(0)}`; }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  });
-}
-
-// ── Fade-in on scroll ───────────────────────────────────────
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.style.opacity = '1';
-      entry.target.style.transform = 'translateY(0)';
+// ── Fade-in on scroll ────────────────────────────────────────
+const fadeObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity   = '1';
+      e.target.style.transform = 'translateY(0)';
     }
   });
-}, { threshold: 0.1 });
+}, { threshold: 0.08 });
 
 document.querySelectorAll('.fade-in').forEach(el => {
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(24px)';
+  el.style.opacity    = '0';
+  el.style.transform  = 'translateY(20px)';
   el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-  observer.observe(el);
+  fadeObserver.observe(el);
 });
-    
