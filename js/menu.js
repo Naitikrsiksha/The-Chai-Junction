@@ -1,47 +1,96 @@
 // ============================================================
-//  menu.js — Menu page logic: load items, filter, cart
+//  menu.js — Menu page: real-time prices + cart
 // ============================================================
 
-// ── Category emojis ─────────────────────────────────────────
 const CAT_EMOJI = {
-  Coffee: '☕', Beverages: '🥤', Food: '🍽️',
-  Desserts: '🍫', Snacks: '🥪', Smoothies: '🥤'
+  Chai: '🍵', Coffee: '☕', Snacks: '🥙', Special: '✨',
+  Beverages: '🥤', Desserts: '🍮', Sandwich: '🥪'
 };
 
-// ── Cart state ───────────────────────────────────────────────
-let cart = JSON.parse(localStorage.getItem('ancafe_cart') || '[]');
-let allItems = [];
-let activeFilter = 'All';
+let allItems    = [];     // full menu items
+let livePrices  = {};     // {item_id: price} — from prices sheet
+let cart        = JSON.parse(localStorage.getItem('tcj_cart') || '[]');
+let priceTimer  = null;   // for live price refresh
 
-// ── Save cart to localStorage ────────────────────────────────
-function saveCart() {
-  localStorage.setItem('ancafe_cart', JSON.stringify(cart));
+// ── Save cart ─────────────────────────────────────────────────
+function saveCart() { localStorage.setItem('tcj_cart', JSON.stringify(cart)); }
+
+// ── Load live prices from Google Sheets ──────────────────────
+// This runs on load AND refreshes every 60 seconds
+// Tum Google Sheet me price change karo → 60s me website pe reflect
+async function loadLivePrices() {
+  const result = await apiGet('getPrices');
+
+  // Show "updating" on all prices
+  document.querySelectorAll('.price-tag').forEach(el => el.classList.add('updating'));
+
+  if (result && result.success) {
+    livePrices = result.data;
+
+    // Apply updated prices to currently rendered cards
+    allItems.forEach(item => {
+      if (livePrices[item.id] !== undefined) {
+        item.price = livePrices[item.id]; // update local copy
+        const priceEl = document.querySelector(`[data-price-id="${item.id}"]`);
+        if (priceEl) priceEl.textContent = `₹${item.price}`;
+      }
+    });
+
+    // Also update any cart items' prices
+    cart = cart.map(ci => {
+      if (livePrices[ci.id] !== undefined) ci.price = livePrices[ci.id];
+      return ci;
+    });
+    saveCart();
+    updateCartUI();
+  }
+
+  document.querySelectorAll('.price-tag').forEach(el => el.classList.remove('updating'));
 }
 
-// ── Load & render menu ───────────────────────────────────────
+// ── Load menu ─────────────────────────────────────────────────
 async function loadMenu() {
   const container = document.getElementById('menu-container');
+  container.innerHTML = `<div style="text-align:center;padding:5rem;"><div class="loader"></div><p style="color:var(--cream-dim);margin-top:1rem;">Menu load ho raha hai...</p></div>`;
 
-  const result = await apiGet('getMenu');
+  // Fetch menu items
+  const menuResult   = await apiGet('getMenu');
+  // Fetch live prices simultaneously
+  const pricesResult = await apiGet('getPrices');
 
-  if (!result || !result.success) {
-    // Fallback static data if API not configured yet
-    allItems = DEMO_ITEMS;
+  if (pricesResult && pricesResult.success) livePrices = pricesResult.data;
+
+  if (menuResult && menuResult.success) {
+    allItems = menuResult.data.map(item => {
+      // Override price with live price if available
+      if (livePrices[item.id] !== undefined) item.price = livePrices[item.id];
+      return item;
+    });
   } else {
-    allItems = result.data;
+    // Use demo data if API not configured
+    allItems = DEMO_ITEMS.map(item => {
+      if (livePrices[item.id] !== undefined) item.price = livePrices[item.id];
+      return item;
+    });
   }
 
   renderMenu(allItems, activeFilter);
   updateCartUI();
+
+  // Auto-refresh prices every 60 seconds
+  clearInterval(priceTimer);
+  priceTimer = setInterval(loadLivePrices, 60000);
 }
+
+// ── Render menu by category ───────────────────────────────────
+let activeFilter = 'All';
 
 function renderMenu(items, filter) {
   const container = document.getElementById('menu-container');
-
-  const filtered = filter === 'All' ? items : items.filter(i => i.category === filter);
+  const filtered  = filter === 'All' ? items : items.filter(i => i.category === filter);
 
   if (!filtered.length) {
-    container.innerHTML = `<div style="text-align:center;padding:4rem;color:var(--cream-dim);">No items in this category yet.</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:4rem;color:var(--cream-dim);">Is category mein abhi kuch nahi hai.</div>`;
     return;
   }
 
@@ -55,35 +104,29 @@ function renderMenu(items, filter) {
   let html = '';
   Object.entries(groups).forEach(([cat, catItems]) => {
     html += `
-      <div class="category-section" data-category="${cat}">
+      <div class="category-section">
         <div class="category-header">
           <h2>${CAT_EMOJI[cat] || '🍴'} ${cat}</h2>
           <div class="category-line"></div>
-          <span class="badge badge-gold">${catItems.length} items</span>
+          <span class="badge badge-saffron">${catItems.length} items</span>
         </div>
         <div class="items-grid">
-          ${catItems.map(item => renderItemCard(item)).join('')}
+          ${catItems.map(item => renderCard(item)).join('')}
         </div>
-      </div>
-    `;
+      </div>`;
   });
 
   container.innerHTML = html;
 
-  // Attach qty button events
+  // Bind qty buttons
   document.querySelectorAll('.qty-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id    = btn.dataset.id;
-      const delta = parseInt(btn.dataset.delta);
-      changeQty(id, delta);
-    });
+    btn.addEventListener('click', () => changeQty(btn.dataset.id, parseInt(btn.dataset.delta)));
   });
 }
 
-function renderItemCard(item) {
-  const cartItem = cart.find(c => c.id === item.id);
-  const qty = cartItem ? cartItem.qty : 0;
-
+// ── Render single item card ───────────────────────────────────
+function renderCard(item) {
+  const qty = (cart.find(c => c.id === item.id) || {}).qty || 0;
   return `
     <div class="item-card" id="card-${item.id}">
       <div class="item-emoji">${CAT_EMOJI[item.category] || '🍴'}</div>
@@ -91,7 +134,9 @@ function renderItemCard(item) {
         <div class="item-name">${item.name}</div>
         <div class="item-desc">${item.description || ''}</div>
         <div class="item-footer">
-          <div class="item-price">${CAFE_CONFIG.CURRENCY}${item.price}</div>
+          <div>
+            <span class="price-tag" data-price-id="${item.id}">₹${item.price}</span>
+          </div>
           <div class="qty-control">
             <button class="qty-btn" data-id="${item.id}" data-delta="-1">−</button>
             <span class="qty-num" id="qty-${item.id}">${qty}</span>
@@ -99,11 +144,10 @@ function renderItemCard(item) {
           </div>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-// ── Qty change ───────────────────────────────────────────────
+// ── Cart qty change ───────────────────────────────────────────
 function changeQty(itemId, delta) {
   const item = allItems.find(i => i.id === itemId);
   if (!item) return;
@@ -117,107 +161,89 @@ function changeQty(itemId, delta) {
   }
 
   saveCart();
-  updateQtyDisplay(itemId);
+  const qtyEl = document.getElementById(`qty-${itemId}`);
+  if (qtyEl) qtyEl.textContent = (cart.find(c => c.id === itemId) || {}).qty || 0;
   updateCartUI();
-
-  if (delta > 0) showToast(`${item.name} added to cart`, 'success', 2000);
+  if (delta > 0) showToast(`${item.name} cart mein add hua ✓`, 'success', 1800);
 }
 
-function updateQtyDisplay(itemId) {
-  const el = document.getElementById(`qty-${itemId}`);
-  if (!el) return;
-  const cartItem = cart.find(c => c.id === itemId);
-  el.textContent = cartItem ? cartItem.qty : 0;
-}
-
-// ── Cart UI ──────────────────────────────────────────────────
+// ── Cart UI ───────────────────────────────────────────────────
 function updateCartUI() {
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const count = cart.reduce((s, i) => s + i.qty, 0);
 
-  const fab = document.getElementById('cart-fab');
-  const countEl = document.getElementById('cart-count');
-  const totalEl = document.getElementById('cart-total');
+  const fab      = document.getElementById('cart-fab');
+  const countEl  = document.getElementById('cart-count');
+  const totalEl  = document.getElementById('cart-total');
+  const itemsEl  = document.getElementById('cart-items');
 
-  if (fab) fab.classList.toggle('visible', count > 0);
+  if (fab)     fab.classList.toggle('visible', count > 0);
   if (countEl) countEl.textContent = count;
-  if (totalEl) totalEl.textContent = `${CAFE_CONFIG.CURRENCY}${total}`;
+  if (totalEl) totalEl.textContent = `₹${total}`;
 
-  // Render cart items
-  const itemsEl = document.getElementById('cart-items');
   if (!itemsEl) return;
-
   if (!cart.length) {
-    itemsEl.innerHTML = `<div class="cart-empty"><div class="icon">🛒</div><p>Your cart is empty</p></div>`;
+    itemsEl.innerHTML = `<div class="cart-empty"><div class="icon">🛒</div><p>Cart khaali hai</p></div>`;
     return;
   }
-
   itemsEl.innerHTML = cart.map(item => `
     <div class="cart-item">
       <div class="cart-item-emoji">${CAT_EMOJI[item.category] || '🍴'}</div>
       <div class="cart-item-info">
         <div class="cart-item-name">${item.name}</div>
-        <div class="cart-item-sub">${CAFE_CONFIG.CURRENCY}${item.price} × ${item.qty}</div>
+        <div class="cart-item-sub">₹${item.price} × ${item.qty}</div>
       </div>
-      <div class="cart-item-price">${CAFE_CONFIG.CURRENCY}${item.price * item.qty}</div>
+      <div class="cart-item-price">₹${item.price * item.qty}</div>
       <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">✕</button>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function removeFromCart(itemId) {
   cart = cart.filter(c => c.id !== itemId);
   saveCart();
   updateCartUI();
-  allItems.forEach(item => { if (item.id === itemId) updateQtyDisplay(itemId); });
+  const qtyEl = document.getElementById(`qty-${itemId}`);
+  if (qtyEl) qtyEl.textContent = 0;
 }
 
-// ── Cart open/close ──────────────────────────────────────────
-function openCart() {
+// ── Cart drawer ───────────────────────────────────────────────
+function openCart()  {
   document.getElementById('cart-drawer').classList.add('open');
   document.getElementById('cart-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
-
 function closeCart() {
   document.getElementById('cart-drawer').classList.remove('open');
   document.getElementById('cart-overlay').classList.remove('open');
   document.body.style.overflow = '';
 }
-
-// ── Proceed to order ─────────────────────────────────────────
 function proceedToOrder() {
-  if (!cart.length) { showToast('Cart is empty!', 'error'); return; }
+  if (!cart.length) { showToast('Cart khaali hai!', 'error'); return; }
   window.location.href = 'order.html';
 }
 
-// ── Filter buttons ───────────────────────────────────────────
+// ── Filter buttons ────────────────────────────────────────────
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     activeFilter = btn.dataset.cat;
     renderMenu(allItems, activeFilter);
-    updateCartUI();
+    updateCartUI(); // rebind qty displays after re-render
   });
 });
 
-// ── Demo data (shown when API not configured) ────────────────
+// ── Demo items ────────────────────────────────────────────────
 const DEMO_ITEMS = [
-  { id: 'ITEM_1', category: 'Coffee',    name: 'Espresso',          description: 'Strong single shot, pure intensity', price: 80,  available: true },
-  { id: 'ITEM_2', category: 'Coffee',    name: 'Cappuccino',        description: 'Espresso with velvety steamed milk foam', price: 120, available: true },
-  { id: 'ITEM_3', category: 'Coffee',    name: 'Cold Brew',         description: '12-hour cold steeped smooth coffee', price: 150, available: true },
-  { id: 'ITEM_9', category: 'Coffee',    name: 'Latte',             description: 'Creamy espresso with lots of milk', price: 130, available: true },
-  { id: 'ITEM_4', category: 'Food',      name: 'Croissant',         description: 'Buttery flaky freshly baked pastry', price: 90,  available: true },
-  { id: 'ITEM_5', category: 'Food',      name: 'Avocado Toast',     description: 'Sourdough with fresh avocado & chilli', price: 180, available: true },
-  { id: 'ITEM_10',category: 'Food',      name: 'Grilled Sandwich',  description: 'Cheese, veggies, herbs on sourdough', price: 140, available: true },
-  { id: 'ITEM_6', category: 'Beverages', name: 'Fresh Lime Soda',   description: 'Chilled lime juice with sparkling soda', price: 70,  available: true },
-  { id: 'ITEM_7', category: 'Beverages', name: 'Mango Smoothie',    description: 'Fresh Alphonso mango blended cold', price: 130, available: true },
-  { id: 'ITEM_11',category: 'Beverages', name: 'Iced Tea',          description: 'Chilled lemon iced tea, lightly sweet', price: 90,  available: true },
-  { id: 'ITEM_8', category: 'Desserts',  name: 'Chocolate Lava Cake', description: 'Warm cake with molten center', price: 160, available: true },
-  { id: 'ITEM_12',category: 'Desserts',  name: 'Tiramisu',          description: 'Classic Italian coffee-soaked dessert', price: 180, available: true },
+  { id:'ITEM_1', category:'Chai',    name:'Masala Chai',     description:'Adrak aur elaichi ki kadak chai',           price:30 },
+  { id:'ITEM_2', category:'Chai',    name:'Cutting Chai',    description:'Mumbai-style half cup strong chai',          price:20 },
+  { id:'ITEM_7', category:'Chai',    name:'Irani Chai',      description:'Creamy Hyderabadi-style Irani chai',         price:45 },
+  { id:'ITEM_8', category:'Chai',    name:'Paan Chai',       description:'Unique paan-flavoured tea',                  price:55 },
+  { id:'ITEM_3', category:'Coffee',  name:'Filter Coffee',   description:'South Indian strong drip coffee',            price:50 },
+  { id:'ITEM_4', category:'Snacks',  name:'Samosa (2 pcs)',  description:'Crispy aloo stuffed samosa',                 price:30 },
+  { id:'ITEM_5', category:'Snacks',  name:'Bread Pakoda',    description:'Bread pakoda with green chutney',            price:40 },
+  { id:'ITEM_6', category:'Snacks',  name:'Veg Sandwich',    description:'Grilled cheese veg sandwich',                price:60 },
 ];
 
-// ── Init ─────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 loadMenu();
-    
