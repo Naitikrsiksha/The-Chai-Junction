@@ -3,223 +3,110 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Order & Book — AN Cafe</title>
+  <title>Order & Book — The Chai Junction</title>
+  <meta name="theme-color" content="#c8860a" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
     .page-hero {
-      padding: 9rem 0 4rem;
-      background:
-        radial-gradient(ellipse 80% 60% at 50% 100%, rgba(200,134,10,0.06) 0%, transparent 70%),
-        var(--bg-dark);
-      text-align: center;
-      border-bottom: 1px solid rgba(200,134,10,0.1);
+      padding: 9rem 0 4rem; text-align: center;
+      background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(224,123,16,0.06) 0%, transparent 70%);
+      border-bottom: 1px solid rgba(224,123,16,0.1);
     }
 
     /* ── Tab Switch ───────────────────────────────────── */
     .tab-switch {
-      display: flex;
-      background: var(--bg-card);
-      border: 1px solid rgba(200,134,10,0.15);
-      border-radius: 100px;
-      padding: 4px;
-      width: fit-content;
-      margin: 0 auto 3rem;
+      display: flex; background: var(--bg-card);
+      border: 1px solid rgba(224,123,16,0.15); border-radius: 100px;
+      padding: 4px; width: fit-content; margin: 0 auto 3rem;
     }
-
     .tab-btn {
-      padding: 0.6rem 2rem;
-      border-radius: 100px;
-      border: none;
-      background: transparent;
-      color: var(--cream-dim);
-      font-family: var(--font-sans);
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
+      padding: 0.6rem 2rem; border-radius: 100px; border: none;
+      background: transparent; color: var(--cream-dim);
+      font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500; cursor: pointer;
       transition: var(--transition);
     }
+    .tab-btn.active { background: var(--saffron); color: var(--bg-dark); }
 
-    .tab-btn.active {
-      background: var(--gold);
-      color: var(--bg-dark);
-    }
-
-    /* ── Form layout ──────────────────────────────────── */
+    /* ── Page layout ──────────────────────────────────── */
     .order-section { padding: 4rem 0 6rem; }
+    .order-grid    { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start; }
 
-    .order-grid {
-      display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 2rem;
-      align-items: start;
-    }
-
+    /* ── Form panel ───────────────────────────────────── */
     .form-panel {
       background: var(--bg-card);
-      border: 1px solid rgba(200,134,10,0.15);
-      border-radius: 16px;
-      padding: 2.5rem;
+      border: 1px solid rgba(224,123,16,0.15);
+      border-radius: 16px; padding: 2.5rem;
     }
+    .form-panel h3  { font-size: 1.4rem; margin-bottom: 0.4rem; }
+    .form-panel .sub { font-size: 0.85rem; color: var(--cream-dim); margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-    .form-panel h3 {
-      font-size: 1.4rem;
-      margin-bottom: 0.5rem;
-    }
+    /* ── Order type selector ──────────────────────────── */
+    .type-selector  { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; }
+    .type-card      { border: 1px solid rgba(224,123,16,0.2); border-radius: 10px; padding: 1.2rem; text-align: center; cursor: pointer; transition: var(--transition); }
+    .type-card:hover, .type-card.selected { border-color: var(--saffron); background: rgba(224,123,16,0.08); }
+    .type-card .icon  { font-size: 1.8rem; margin-bottom: 0.4rem; }
+    .type-card .label { font-size: 0.85rem; font-weight: 600; color: var(--cream); }
+    .type-card .sub   { font-size: 0.74rem; color: var(--cream-dim); }
 
-    .form-panel .sub {
-      font-size: 0.85rem;
-      color: var(--cream-dim);
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    /* ── Order Summary Panel ──────────────────────────── */
+    /* ── Summary panel ────────────────────────────────── */
     .summary-panel {
-      background: var(--bg-card);
-      border: 1px solid rgba(200,134,10,0.15);
-      border-radius: 16px;
-      overflow: hidden;
-      position: sticky;
-      top: 90px;
+      background: var(--bg-card); border: 1px solid rgba(224,123,16,0.15);
+      border-radius: 16px; overflow: hidden; position: sticky; top: 90px;
     }
-
-    .summary-header {
-      padding: 1.5rem;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
+    .summary-header { padding: 1.3rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
     .summary-header h3 { font-size: 1rem; }
+    .summary-items { padding: 0.8rem 1.5rem; max-height: 260px; overflow-y: auto; }
+    .summary-item  { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.87rem; }
+    .summary-item-name  { color: var(--cream); }
+    .summary-item-price { color: var(--saffron-lt); font-family: var(--font-serif); }
+    .empty-cart-msg     { text-align: center; padding: 1.5rem; color: var(--cream-dim); font-size: 0.85rem; }
 
-    .summary-items {
-      padding: 1rem 1.5rem;
-      max-height: 300px;
-      overflow-y: auto;
+    .summary-footer { padding: 1.3rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.07); }
+    .summary-line   { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.85rem; }
+    .summary-line .lbl { color: var(--cream-dim); }
+    .summary-line .val { color: var(--cream); }
+    .summary-total     { display: flex; justify-content: space-between; align-items: center; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0.5rem; }
+    .summary-total .lbl { font-weight: 600; color: var(--cream); font-size: 0.9rem; }
+    .summary-total .val { font-family: var(--font-serif); font-size: 1.6rem; color: var(--saffron-lt); }
+
+    /* ── Price freshness indicator ────────────────────── */
+    .price-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.2rem;
     }
+    .price-header label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-dim); }
 
-    .summary-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      font-size: 0.88rem;
-    }
+    /* ── Success screen ───────────────────────────────── */
+    .success-screen { display: none; text-align: center; padding: 3rem 2rem; }
+    .success-check  { width: 80px; height: 80px; background: rgba(50,150,50,0.12); border: 2px solid rgba(50,200,50,0.25); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem; }
+    .order-id-box   { background: var(--bg-input); border: 1px solid rgba(224,123,16,0.2); border-radius: 10px; padding: 1rem 1.5rem; margin: 1.2rem 0; font-family: var(--font-serif); font-size: 1.4rem; color: var(--saffron-lt); letter-spacing: 0.1em; }
 
-    .summary-item-name { color: var(--cream); }
-    .summary-item-price { color: var(--gold-light); font-family: var(--font-serif); }
-
-    .summary-footer {
-      padding: 1.5rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .summary-total {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.6rem;
-    }
-
-    .summary-total .label { font-size: 0.82rem; color: var(--cream-dim); }
-    .summary-total .amount { font-family: var(--font-serif); font-size: 1.5rem; color: var(--gold-light); }
-
-    .empty-cart-msg {
-      text-align: center;
-      padding: 2rem;
-      color: var(--cream-dim);
-      font-size: 0.88rem;
-    }
-
-    /* ── Type selection ───────────────────────────────── */
-    .type-selector {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.8rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .type-card {
-      border: 1px solid rgba(200,134,10,0.2);
-      border-radius: 10px;
-      padding: 1.2rem;
-      text-align: center;
+    /* UPI Pay button */
+    #upi-pay-btn, #booking-pay-btn {
+      display: none;
+      background: #4CAF50;
+      color: #fff;
+      font-size: 0.9rem;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      border: none;
       cursor: pointer;
+      width: 100%;
+      margin-top: 1rem;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      letter-spacing: 0.05em;
       transition: var(--transition);
     }
+    #upi-pay-btn:hover, #booking-pay-btn:hover { background: #45a049; transform: translateY(-2px); }
 
-    .type-card:hover { border-color: var(--gold); }
+    /* Pay amount display */
+    .pay-amount-big { font-family: var(--font-serif); font-size: 2rem; color: var(--saffron-lt); }
 
-    .type-card.selected {
-      border-color: var(--gold);
-      background: rgba(200,134,10,0.08);
-    }
-
-    .type-card .icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
-    .type-card .label { font-size: 0.85rem; font-weight: 500; color: var(--cream); }
-    .type-card .sub   { font-size: 0.75rem; color: var(--cream-dim); }
-
-    /* ── UPI box ──────────────────────────────────────── */
-    .upi-box {
-      background: var(--bg-input);
-      border: 1px solid rgba(200,134,10,0.2);
-      border-radius: 10px;
-      padding: 1.5rem;
-      text-align: center;
-      margin: 1.5rem 0;
-    }
-
-    .upi-box .upi-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .upi-box .upi-id {
-      font-family: var(--font-serif);
-      font-size: 1.3rem;
-      color: var(--gold-light);
-      letter-spacing: 0.05em;
-    }
-
-    .upi-box .upi-hint { font-size: 0.8rem; color: var(--cream-dim); margin-top: 0.4rem; }
-
-    /* ── Success state ────────────────────────────────── */
-    .success-screen {
-      display: none;
-      text-align: center;
-      padding: 4rem 2rem;
-    }
-
-    .success-screen .check {
-      width: 80px; height: 80px;
-      background: rgba(50,150,50,0.15);
-      border: 2px solid rgba(50,200,50,0.3);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      margin: 0 auto 1.5rem;
-    }
-
-    .order-id-box {
-      background: var(--bg-input);
-      border: 1px solid rgba(200,134,10,0.2);
-      border-radius: 10px;
-      padding: 1.2rem;
-      margin: 1.5rem 0;
-      font-family: var(--font-serif);
-      font-size: 1.4rem;
-      color: var(--gold-light);
-      letter-spacing: 0.1em;
-    }
-
-    /* Booking tab */
+    /* Booking section */
     .booking-section { display: none; }
 
     @media (max-width: 900px) {
@@ -231,13 +118,17 @@
 </head>
 <body>
 
+<!-- ── Navbar ─────────────────────────────────────────────── -->
 <nav class="navbar">
-  <a href="index.html" class="nav-logo">AN <span>Cafe</span></a>
+  <a href="index.html" class="nav-logo-wrap">
+    <div class="nav-logo-icon">☕</div>
+    <span class="nav-logo-text">The <span>Chai</span> Junction</span>
+  </a>
   <ul class="nav-links">
     <li><a href="index.html">Home</a></li>
     <li><a href="menu.html">Menu</a></li>
     <li><a href="order.html" class="active">Order</a></li>
-    <li><a href="order.html#booking">Reservations</a></li>
+    <li><a href="order.html#booking">Booking</a></li>
     <li><a href="order.html" class="nav-cta">Order Now</a></li>
   </ul>
   <div class="nav-hamburger"><span></span><span></span><span></span></div>
@@ -245,13 +136,13 @@
 
 <div class="page-hero">
   <div class="container">
-    <span class="section-label">Ready to order?</span>
-    <h1>Order & Reserve</h1>
-    <p>Place your order online or book a table for your next visit.</p>
-    <br />
+    <span class="section-label">Online Order & Booking</span>
+    <h1>Order Karo, Table Lo</h1>
+    <p>Items choose karo, UPI se pay karo — koi jhanjhat nahi.</p>
+    <br/>
     <div class="tab-switch">
-      <button class="tab-btn active" onclick="switchTab('order')">🛒 Place Order</button>
-      <button class="tab-btn" id="booking-tab-btn" onclick="switchTab('booking')">📅 Book a Table</button>
+      <button class="tab-btn active" onclick="switchTab('order')">🛒 Order Karo</button>
+      <button class="tab-btn" onclick="switchTab('booking')">📅 Table Book Karo</button>
     </div>
   </div>
 </div>
@@ -259,202 +150,268 @@
 <section class="order-section">
   <div class="container">
 
-    <!-- ══ ORDER FORM ══════════════════════════════════════════ -->
+    <!-- ══ ORDER SECTION ══════════════════════════════════════ -->
     <div id="order-section">
       <div class="order-grid">
 
-        <!-- Left: Form -->
+        <!-- Left: Order form -->
         <div>
-          <!-- Success screen -->
+          <!-- Success -->
           <div class="success-screen" id="order-success">
-            <div class="check">✓</div>
-            <h2>Order Placed!</h2>
-            <p style="margin-bottom:0">Thank you for ordering. Your order ID is:</p>
+            <div class="success-check">✓</div>
+            <h2>Order Ho Gaya!</h2>
+            <p>Tumhara order place hua. Order ID:</p>
             <div class="order-id-box" id="order-id-display">—</div>
-            <p>We'll have it ready soon. Check your email for confirmation.</p>
+            <p>Ab UPI se payment karo — <strong class="pay-amount-big" id="pay-amount-display">₹0</strong></p>
+            <!-- UPI Pay Button (appears after order is placed) -->
+            <button id="upi-pay-btn">Pay via UPI →</button>
+            <p style="font-size:0.78rem;color:var(--cream-dim);margin-top:0.8rem;">
+              ☝️ Button click karo — GPay/PhonePe/Paytm khulega exact amount ke saath.<br/>
+              Koi fraud nahi — amount already fix tha.
+            </p>
             <div style="display:flex;gap:1rem;justify-content:center;margin-top:2rem;flex-wrap:wrap;">
-              <button class="btn btn-primary" onclick="resetOrderForm()">Place Another Order</button>
-              <a href="index.html" class="btn btn-outline">Back to Home</a>
+              <button class="btn btn-primary" onclick="resetOrderForm()">Aur Order Karo</button>
+              <a href="index.html" class="btn btn-outline">Home Jaao</a>
             </div>
           </div>
 
-          <!-- Order form -->
+          <!-- Order Form -->
           <div class="form-panel" id="order-form-panel">
-            <h3>Your Details</h3>
-            <p class="sub">Fill in your info and we'll get your order ready.</p>
+            <h3>Order Details</h3>
+            <p class="sub">Sahi details bharo — order confirm hoga.</p>
 
-            <!-- Order type -->
+            <!-- Honeypot — bots isko fill karte hain, real users nahi -->
+            <div class="hp-field" aria-hidden="true">
+              <input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <!-- Order Type -->
             <div style="margin-bottom:1.5rem;">
-              <label style="display:block;font-size:0.8rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:0.8rem;">Order Type</label>
+              <label style="display:block;font-size:0.78rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:0.8rem;">Order Type</label>
               <div class="type-selector">
                 <div class="type-card selected" data-type="dine-in" onclick="selectType('dine-in')">
                   <div class="icon">🍽️</div>
                   <div class="label">Dine In</div>
-                  <div class="sub">Eat at our cafe</div>
+                  <div class="sub">Cafe mein baitho +₹30 pre-booking</div>
                 </div>
                 <div class="type-card" data-type="takeaway" onclick="selectType('takeaway')">
                   <div class="icon">🥡</div>
                   <div class="label">Takeaway</div>
-                  <div class="sub">Pick up & go</div>
+                  <div class="sub">Pakad ke le jaao</div>
                 </div>
               </div>
             </div>
 
-            <!-- Table no (dine-in only) -->
+            <!-- Table select (dine-in only) -->
             <div class="form-group" id="table-group">
               <label>Table Number</label>
               <select id="table-no">
-                <option value="">Select table...</option>
-                <!-- Filled by JS -->
+                <option value="">Table select karo...</option>
               </select>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Your Name *</label>
-                <input type="text" id="order-name" placeholder="Rahul Mishra" />
+                <label>Tumhara Naam *</label>
+                <input type="text" id="order-name" placeholder="Rahul Kumar" autocomplete="name" />
+                <div class="field-error">Naam kam se kam 2 characters ka hona chahiye</div>
               </div>
               <div class="form-group">
                 <label>Phone *</label>
-                <input type="tel" id="order-phone" placeholder="+91 98765 43210" />
+                <input type="tel" id="order-phone" placeholder="9876543210" maxlength="10" inputmode="numeric" autocomplete="tel" />
+                <div class="field-error">Exactly 10 digits chahiye (sirf numbers)</div>
               </div>
             </div>
 
             <div class="form-group">
-              <label>Email (optional — for confirmation)</label>
-              <input type="email" id="order-email" placeholder="rahul@example.com" />
+              <label>Email (optional)</label>
+              <input type="email" id="order-email" placeholder="rahul@email.com" autocomplete="email" />
             </div>
 
             <div class="form-group">
-              <label>Special Instructions</label>
-              <textarea id="order-notes" rows="2" placeholder="No sugar in coffee, extra napkins..."></textarea>
+              <label>Koi Special Request?</label>
+              <textarea id="order-notes" rows="2" placeholder="Sugar kam rakhna, extra napkin dena..."></textarea>
             </div>
 
-            <!-- Payment -->
-            <div style="margin-bottom:1.5rem;">
-              <label style="display:block;font-size:0.8rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:0.8rem;">Payment</label>
-              <div class="upi-box">
-                <div class="upi-icon">💳</div>
-                <div class="upi-id" id="upi-display">—</div>
-                <div class="upi-hint">Pay via UPI, PhonePe, GPay, or Paytm · Or pay at the cafe</div>
+            <!-- Real-time price summary BEFORE payment -->
+            <div style="background:var(--bg-input);border:1px solid rgba(224,123,16,0.2);border-radius:10px;padding:1.2rem;margin-bottom:1.5rem;">
+              <div class="price-header">
+                <label>Order Total</label>
+                <span class="live-badge" id="price-live-badge" style="display:none;">Live Prices</span>
               </div>
+              <div class="summary-line">
+                <span class="lbl">Items subtotal</span>
+                <span class="val" id="items-subtotal">₹0</span>
+              </div>
+              <div class="summary-line" id="prebooking-row" style="display:flex;">
+                <span class="lbl">Pre-booking charge</span>
+                <span class="val">₹30</span>
+              </div>
+              <div class="summary-total">
+                <span class="lbl" style="font-size:1rem;">Total</span>
+                <span class="val" data-total>₹0</span>
+              </div>
+              <p style="font-size:0.74rem;color:var(--cream-dim);margin-top:0.6rem;text-align:center;">
+                ✓ Prices real-time Google Sheets se aate hain
+              </p>
             </div>
 
             <button class="btn btn-primary btn-lg" style="width:100%;" id="place-order-btn" onclick="placeOrder()">
-              Place Order →
+              Order Place Karo →
             </button>
+            <p style="font-size:0.74rem;color:var(--cream-dim);text-align:center;margin-top:0.8rem;">
+              Order place karne ke baad UPI payment button aayega exact amount ke saath.
+            </p>
           </div>
         </div>
 
         <!-- Right: Summary -->
         <div class="summary-panel">
           <div class="summary-header">
-            <h3>Order Summary</h3>
-            <a href="menu.html" style="font-size:0.8rem;color:var(--gold);">Edit Cart</a>
+            <h3>Cart Summary</h3>
+            <a href="menu.html" style="font-size:0.8rem;color:var(--saffron);">Edit →</a>
           </div>
           <div class="summary-items" id="summary-items">
-            <div class="empty-cart-msg">Your cart is empty.<br/><a href="menu.html" style="color:var(--gold);">Add items →</a></div>
+            <div class="empty-cart-msg">Cart khaali hai.<br/><a href="menu.html">Menu se add karo →</a></div>
           </div>
           <div class="summary-footer">
-            <div class="summary-total">
-              <span class="label">Subtotal</span>
-              <span class="amount" id="summary-subtotal">₹0</span>
+            <div class="summary-line">
+              <span class="lbl">Items</span>
+              <span class="val" id="items-subtotal-side">₹0</span>
+            </div>
+            <div class="summary-line" id="prebooking-side">
+              <span class="lbl">Pre-booking</span>
+              <span class="val" style="color:var(--saffron-lt);">₹30</span>
             </div>
             <div class="summary-total">
-              <span class="label" style="font-size:0.72rem;">No extra charges</span>
-              <span class="badge badge-green">Free Service</span>
+              <span class="lbl">Grand Total</span>
+              <span class="val" data-total>₹0</span>
             </div>
+            <p style="font-size:0.72rem;color:var(--cream-dim);margin-top:0.8rem;text-align:center;">
+              Prices auto-update every 60 seconds
+            </p>
           </div>
         </div>
+
       </div>
     </div>
 
-    <!-- ══ BOOKING FORM ════════════════════════════════════════ -->
+    <!-- ══ BOOKING SECTION ════════════════════════════════════ -->
     <div id="booking-section" class="booking-section">
       <div class="order-grid">
         <div>
           <!-- Booking success -->
           <div class="success-screen" id="booking-success">
-            <div class="check">✓</div>
-            <h2>Table Booked!</h2>
-            <p>Your reservation is confirmed. Booking ID:</p>
+            <div class="success-check">✓</div>
+            <h2>Table Book Ho Gaya!</h2>
+            <p>Booking ID:</p>
             <div class="order-id-box" id="booking-id-display">—</div>
-            <p>See you soon at AN Cafe!</p>
+            <p>Pre-booking charge <strong class="pay-amount-big">₹30</strong> pay karo:</p>
+            <button id="booking-pay-btn">Pay ₹30 Pre-booking via UPI →</button>
+            <p style="font-size:0.78rem;color:var(--cream-dim);margin-top:0.8rem;">
+              ☝️ ₹30 confirm karta hai tumhara table — exactly itna hi katega.
+            </p>
             <div style="display:flex;gap:1rem;justify-content:center;margin-top:2rem;flex-wrap:wrap;">
-              <button class="btn btn-primary" onclick="resetBookingForm()">Book Another</button>
-              <a href="index.html" class="btn btn-outline">Back to Home</a>
+              <button class="btn btn-primary" onclick="resetBookingForm()">Aur Book Karo</button>
+              <a href="index.html" class="btn btn-outline">Home Jaao</a>
             </div>
           </div>
 
           <div class="form-panel" id="booking-form-panel">
-            <h3>Reserve a Table</h3>
-            <p class="sub">Book ahead and we'll have your table ready.</p>
+            <h3>Table Reserve Karo</h3>
+            <p class="sub">Pehle book karo — hum tumhara table ready rakhenge. ₹30 pre-booking charge lagega.</p>
+
+            <!-- Honeypot -->
+            <div class="hp-field" aria-hidden="true">
+              <input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off" />
+            </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Full Name *</label>
-                <input type="text" id="booking-name" placeholder="Rahul Mishra" />
+                <label>Naam *</label>
+                <input type="text" id="booking-name" placeholder="Rahul Kumar" autocomplete="name" />
+                <div class="field-error">Naam 2+ characters</div>
               </div>
               <div class="form-group">
                 <label>Phone *</label>
-                <input type="tel" id="booking-phone" placeholder="+91 98765 43210" />
+                <input type="tel" id="booking-phone" placeholder="9876543210" maxlength="10" inputmode="numeric" />
+                <div class="field-error">Exactly 10 digits</div>
               </div>
             </div>
 
             <div class="form-group">
               <label>Email (optional)</label>
-              <input type="email" id="booking-email" placeholder="rahul@example.com" />
+              <input type="email" id="booking-email" placeholder="rahul@email.com" autocomplete="email" />
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label>Date *</label>
                 <input type="date" id="booking-date" />
+                <div class="field-error">Date select karo</div>
               </div>
               <div class="form-group">
                 <label>Time *</label>
                 <select id="booking-time">
-                  <option value="">Select time...</option>
+                  <option value="">Time select karo</option>
                   <option>07:00 AM</option><option>08:00 AM</option><option>09:00 AM</option>
                   <option>10:00 AM</option><option>11:00 AM</option><option>12:00 PM</option>
                   <option>01:00 PM</option><option>02:00 PM</option><option>03:00 PM</option>
                   <option>04:00 PM</option><option>05:00 PM</option><option>06:00 PM</option>
                   <option>07:00 PM</option><option>08:00 PM</option><option>09:00 PM</option>
                 </select>
+                <div class="field-error">Time select karo</div>
               </div>
             </div>
 
             <div class="form-group">
-              <label>Number of Guests *</label>
+              <label>Kitne Log Hain? *</label>
               <select id="booking-guests">
-                <option value="">Select...</option>
+                <option value="">Select karo...</option>
                 <option>1 Guest</option><option>2 Guests</option><option>3 Guests</option>
                 <option>4 Guests</option><option>5 Guests</option><option>6 Guests</option>
-                <option>7+ Guests (call us)</option>
+                <option>7+ Guests (call karo)</option>
               </select>
+              <div class="field-error">Guests select karo</div>
             </div>
 
             <div class="form-group">
-              <label>Special Requests</label>
-              <textarea id="booking-notes" rows="2" placeholder="Birthday cake, window seat, wheelchair access..."></textarea>
+              <label>Koi Special Request?</label>
+              <textarea id="booking-notes" rows="2" placeholder="Birthday celebration, window seat..."></textarea>
             </div>
 
-            <button class="btn btn-primary btn-lg" style="width:100%;" onclick="placeBooking()">
-              Confirm Reservation →
+            <!-- Pre-booking charge display -->
+            <div style="background:var(--bg-input);border:1px solid rgba(224,123,16,0.2);border-radius:10px;padding:1.2rem;margin-bottom:1.5rem;">
+              <div class="summary-line">
+                <span class="lbl">Pre-booking Confirmation Charge</span>
+                <span class="val" style="color:var(--saffron-lt);font-family:var(--font-serif);font-size:1.3rem;">₹30</span>
+              </div>
+              <p style="font-size:0.74rem;color:var(--cream-dim);margin-top:0.5rem;">
+                ✓ ₹30 tumhara table confirm karta hai — bilkul secure UPI payment
+              </p>
+            </div>
+
+            <button class="btn btn-primary btn-lg" style="width:100%;" id="place-booking-btn" onclick="placeBooking()">
+              Table Confirm Karo — ₹30 →
             </button>
           </div>
         </div>
 
-        <!-- Info side panel -->
+        <!-- Info side -->
         <div>
           <div class="summary-panel" style="position:sticky;top:90px;">
-            <div class="summary-header"><h3>Visiting Info</h3></div>
+            <div class="summary-header"><h3>Visit Info</h3></div>
             <div style="padding:1.5rem;">
-              <p style="margin-bottom:1rem;font-size:0.9rem;">📍 12, MG Road, Buxar, Bihar</p>
+              <p style="margin-bottom:1rem;font-size:0.9rem;">📍 YOUR_ADDRESS</p>
               <p style="margin-bottom:1rem;font-size:0.9rem;">🕐 Mon–Sun: 7AM – 10PM</p>
-              <p style="margin-bottom:1rem;font-size:0.9rem;">📞 +91 98765 43210</p>
+              <p style="margin-bottom:1rem;font-size:0.9rem;">📞 YOUR_PHONE</p>
               <div class="divider"></div>
-              <p style="font-size:0.85rem;color:var(--cream-dim);">We hold reserved tables for up to 15 minutes. Please call us for large groups (7+).</p>
+              <p style="font-size:0.82rem;color:var(--cream-dim);margin-bottom:0.8rem;">
+                Table 15 minute tak hold hota hai. Large groups (7+) ke liye call karo.
+              </p>
+              <p style="font-size:0.82rem;color:var(--cream-dim);">
+                Pre-booking ₹30 ek baar kato hai — cafe me koi extra charge nahi.
+              </p>
             </div>
           </div>
         </div>
@@ -467,11 +424,22 @@
 <footer class="footer">
   <div class="container">
     <div class="footer-bottom">
-      <span>© 2024 AN Cafe.</span>
-      <a href="index.html" style="color:var(--gold);">← Back to Home</a>
+      <span>© 2024 The Chai Junction</span>
+      <a href="index.html" style="color:var(--saffron);">← Home</a>
     </div>
   </div>
 </footer>
+
+<!-- PWA Install Banner -->
+<div class="install-banner" id="install-banner">
+  <div class="icon">☕</div>
+  <div class="text">
+    <strong>App Install Karo!</strong>
+    <span>Phone pe save karo — bina browser ke access karo</span>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="installPWA()">Install</button>
+  <button class="install-close" onclick="dismissInstallBanner()">✕</button>
+</div>
 
 <script src="js/config.js"></script>
 <script src="js/main.js"></script>
