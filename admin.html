@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — AN Cafe</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { background: #0a0600; }
+
+    /* ── Login Screen ─────────────────────────────────── */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at 50% 40%, rgba(200,134,10,0.07) 0%, transparent 60%);
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(200,134,10,0.2);
+      border-radius: 20px;
+      padding: 3rem;
+      width: min(420px, 90vw);
+      text-align: center;
+    }
+
+    .login-card .logo {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      color: var(--cream);
+      margin-bottom: 0.3rem;
+    }
+
+    .login-card .logo span { color: var(--gold); }
+    .login-card .sub { font-size: 0.85rem; color: var(--cream-dim); margin-bottom: 2.5rem; }
+
+    /* ── Dashboard Layout ─────────────────────────────── */
+    .dashboard { display: none; }
+
+    .admin-nav {
+      background: rgba(10, 6, 0, 0.95);
+      border-bottom: 1px solid rgba(200,134,10,0.15);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .admin-nav .logo {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      color: var(--cream);
+    }
+
+    .admin-nav .logo span { color: var(--gold); }
+
+    .admin-nav-links {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .admin-tab {
+      padding: 0.5rem 1.2rem;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--cream-dim);
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .admin-tab:hover  { color: var(--cream); background: rgba(255,255,255,0.05); }
+    .admin-tab.active { background: var(--gold); color: var(--bg-dark); }
+
+    .admin-content { padding: 2.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+
+    /* ── Stats Grid ───────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(200,134,10,0.12);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    .stat-card .stat-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+    .stat-card .stat-value { font-family: var(--font-serif); font-size: 2rem; color: var(--gold-light); line-height: 1; margin-bottom: 0.3rem; }
+    .stat-card .stat-label { font-size: 0.78rem; color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* ── Table ────────────────────────────────────────── */
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+
+    .table-header h3 { font-size: 1.2rem; }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border: 1px solid rgba(200,134,10,0.1);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .data-table th {
+      background: rgba(200,134,10,0.08);
+      padding: 0.9rem 1rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border-bottom: 1px solid rgba(200,134,10,0.12);
+    }
+
+    .data-table td {
+      padding: 0.9rem 1rem;
+      font-size: 0.87rem;
+      color: var(--cream-dim);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: rgba(255,255,255,0.02); color: var(--cream); }
+
+    .data-table .name-col { color: var(--cream); font-weight: 500; }
+
+    .status-select {
+      background: var(--bg-input);
+      border: 1px solid rgba(200,134,10,0.2);
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      color: var(--cream);
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .table-scroll { overflow-x: auto; border-radius: var(--radius); }
+
+    /* Tab panels */
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem;
+      color: var(--cream-dim);
+      font-size: 0.9rem;
+    }
+
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid rgba(200,134,10,0.3);
+      color: var(--gold);
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .refresh-btn:hover { background: rgba(200,134,10,0.1); }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ════════════════════════════════════════════ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="logo">AN <span>Cafe</span></div>
+    <div class="sub">Admin Dashboard</div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="admin-pass" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:0.5rem;" onclick="doLogin()">
+      Login →
+    </button>
+    <br/><br/>
+    <a href="index.html" style="font-size:0.82rem;color:var(--cream-dim);">← Back to site</a>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ═══════════════════════════════════════════════ -->
+<div class="dashboard" id="dashboard">
+
+  <nav class="admin-nav">
+    <div class="logo">AN <span>Cafe</span> <span style="font-size:0.8rem;color:var(--cream-dim);font-family:var(--font-sans);">Admin</span></div>
+    <div class="admin-nav-links">
+      <button class="admin-tab active" onclick="showPanel('overview')">Overview</button>
+      <button class="admin-tab" onclick="showPanel('orders')">Orders</button>
+      <button class="admin-tab" onclick="showPanel('bookings')">Bookings</button>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="logout()">Logout</button>
+  </nav>
+
+  <div class="admin-content">
+
+    <!-- ── Overview ─────────────────────────────────── -->
+    <div class="admin-panel active" id="panel-overview">
+      <h2 style="margin-bottom:1.5rem;">Dashboard Overview</h2>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="s-total-orders">—</div><div class="stat-label">Total Orders</div></div>
+        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" id="s-pending">—</div><div class="stat-label">Pending Orders</div></div>
+        <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value" id="s-bookings">—</div><div class="stat-label">Total Bookings</div></div>
+        <div class="stat-card"><div class="stat-icon">☀️</div><div class="stat-value" id="s-today">—</div><div class="stat-label">Today's Orders</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" id="s-revenue">—</div><div class="stat-label">Total Revenue</div></div>
+      </div>
+
+      <div style="text-align:center;padding:2rem;color:var(--cream-dim);font-size:0.88rem;">
+        <p>Use the tabs above to manage <strong style="color:var(--cream);">Orders</strong> and <strong style="color:var(--cream);">Bookings</strong>.</p>
+        <p style="margin-top:0.5rem;">Data syncs from your Google Sheet in real time.</p>
+      </div>
+    </div>
+
+    <!-- ── Orders ────────────────────────────────────── -->
+    <div class="admin-panel" id="panel-orders">
+      <div class="table-header">
+        <h3>All Orders</h3>
+        <button class="refresh-btn" onclick="loadOrders()">↻ Refresh</button>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="orders-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Time</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Type</th>
+              <th>Table</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody">
+            <tr><td colspan="9"><div class="empty-state">Loading orders...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Bookings ───────────────────────────────────── -->
+    <div class="admin-panel" id="panel-bookings">
+      <div class="table-header">
+        <h3>All Bookings</h3>
+        <button class="refresh-btn" onclick="loadBookings()">↻ Refresh</button>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="bookings-table">
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Time</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Date</th>
+              <th>Time Slot</th>
+              <th>Guests</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="bookings-tbody">
+            <tr><td colspan="9"><div class="empty-state">Loading bookings...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/main.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
